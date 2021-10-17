@@ -1,0 +1,22 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pdbpp = "*"
+pytest = "*"
+sphinx = "*"
+sphinx-rtd-theme = "*"
+invoke = "*"
+invocations = "*"
+bump2version = "*"
+pytest-mock = "*"
+sphinxcontrib-programoutput = "*"
+sphinx-autodoc-typehints = "*"
+pytest-cov = "*"
+coverage = "*"
+
+[packages]
+click = "*"
+investporto = {editable = true,path = "."}
