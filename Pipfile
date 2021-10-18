@@ -19,4 +19,4 @@ coverage = "*"
 
 [packages]
 click = "*"
-investporto = {editable = true,path = "."}
+investporto = {path = "."}

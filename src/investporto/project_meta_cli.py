@@ -53,12 +53,14 @@ def create(projectname: PathType):
     required=False,
     default="my_finantial_portofolio",
 )
-def delete(projectname: PathType):
+@click.option("-y", "--yes", is_flag=True, required=False)
+def delete(projectname: PathType, yes: bool):
     """Delete the project"""
     projectname = pathlib.Path(projectname)
     # Confirm what the user wants to do
-    if input(f"are you sure you want to delete {projectname}? (y/n)") != "y":
-        exit()
+    if not yes:
+        if input(f"are you sure you want to delete {projectname}? (y/n)") != "y":
+            exit()
     if not (projectname / portofolio_plan_name).is_file():
         click.echo("This seems not to be a supported project!")
         exit()
