@@ -19,4 +19,5 @@ coverage = "*"
 
 [packages]
 click = "*"
+pyzipper = "*"
 investporto = {path = "."}
