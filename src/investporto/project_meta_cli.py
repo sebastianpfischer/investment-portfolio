@@ -19,6 +19,7 @@ import os
 import click
 import pyzipper
 from pathlib import Path
+from shutil import rmtree
 
 from .types_and_vars import PathType, portofolio_plan_name
 
@@ -37,7 +38,7 @@ def project_meta():
     required=False,
     default="my_finantial_portofolio",
 )
-def create(projectname: PathType):
+def create_project(projectname: PathType):
     """Create a project as folder structure"""
     # Create project
     projectname = Path(projectname)
@@ -56,7 +57,7 @@ def create(projectname: PathType):
     default="my_finantial_portofolio",
 )
 @click.option("-y", "--yes", is_flag=True, required=False)
-def delete(projectname: PathType, yes: bool):
+def delete_project(projectname: PathType, yes: bool):
     """Delete the project"""
     projectname = Path(projectname)
     # Confirm what the user wants to do
@@ -66,12 +67,8 @@ def delete(projectname: PathType, yes: bool):
     if not (projectname / portofolio_plan_name).is_file():
         click.echo("This seems not to be a supported project!")
         exit(os.EX_USAGE)
-    # Search first if any content exist in the projectstructure and delete it
-    project_content = projectname.rglob("*")
-    for file in project_content:
-        file.unlink()
-    # Delete the project
-    projectname.rmdir()
+    # Delete the project with all it contains
+    rmtree(projectname.resolve())
     click.echo(f"{projectname} was definitely deleted...")
 
 
@@ -82,7 +79,8 @@ def delete(projectname: PathType, yes: bool):
     required=True,
 )
 @click.password_option()
-def close(projectname: PathType, password: str):
+def close_project(projectname: PathType, password: str):
+    """Create an encrypt zip file out of the project and delete the worked one"""
     projectname = Path(projectname).resolve()
     contents = os.walk(projectname)
     # Zip the project
@@ -93,14 +91,14 @@ def close(projectname: PathType, password: str):
         encryption=pyzipper.WZ_AES,
     ) as zip_file:
         zip_file.setpassword(password.encode())
-        for root, folders, files in contents:
+        for root, _, files in contents:
             for file_name in files:
                 zip_file.write(
                     (Path(root) / file_name),
                     arcname=(Path(root).relative_to(projectname) / file_name),
                 )
     # Delete the unziped project
-    pass
+    rmtree(projectname.resolve())
 
 
 @project_meta.command("open")
@@ -110,16 +108,16 @@ def close(projectname: PathType, password: str):
     required=True,
 )
 @click.password_option()
-def open(projectname: PathType, password: str):
+def open_project(projectname: PathType, password: str):
+    """Extract from the zip all the project back to the basic project structur"""
     projectname = Path(projectname).resolve()
-    contents = os.walk(projectname)
     with pyzipper.AESZipFile(
-        f"{projectname}.zip",
+        projectname,
         "r",
         compression=pyzipper.ZIP_DEFLATED,
         encryption=pyzipper.WZ_AES,
     ) as zip_file:
         zip_file.setpassword(password.encode())
-        zip_file.extractall(path=projectname)
+        zip_file.extractall(path=(projectname.parent / projectname.stem))
     # Delete the unziped project
-    pass
+    Path(projectname).unlink()
