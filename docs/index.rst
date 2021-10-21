@@ -1,5 +1,5 @@
 Welcome to investment-portofolio's documentation!
-==================================
+=================================================
 
 Work in progress...
 
@@ -7,6 +7,9 @@ Work in progress...
     :maxdepth: 2
     :caption: Contents:
 
+    how_to_install
+    basic_tutorial
+    api
 
 Indices and tables
 ==================

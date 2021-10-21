@@ -4,7 +4,7 @@ Investment portfolio
 
 :module: project_meta_cli
 
-:synopsis: Entry point to the tool
+:synopsis: CLI section for the project mamagement
 
 .. currentmodule:: project_meta_cli
 

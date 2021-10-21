@@ -133,26 +133,3 @@ def run(c, level="INFO"):
     """run the tool"""
     c.run("rm -f killme.log")
     c.run(f"investporto")
-
-
-@task
-def update_copyright(c):
-    p = pathlib.Path(".")
-    files = p.glob("**/*.py")
-
-    # RST docs copyright notice
-    pat = r":Copyright:.*?SPDX-License-Identifier: EPL-[0-9.]+\s"
-    cp_doc_pat = re.compile(pat, re.MULTILINE + re.DOTALL)
-    # comment copyright notice
-    pat = r"#*\s*#\s*Copyright.*?#\s*SPDX-License-Identifier: EPL-[0-9.]+\s*#*\s+"
-    cp_com_pat = re.compile(pat, re.MULTILINE + re.DOTALL)
-
-    for pyf in files:
-        with open(pyf, "r+") as f:
-            text = f.read()
-            text = cp_doc_pat.sub("", text, count=1)
-            text = cp_com_pat.sub("", text, count=1)
-            text = COPYRIGHT + text
-            f.seek(0)
-            f.write(text)
-            f.truncate()
