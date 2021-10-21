@@ -4,7 +4,7 @@ Investment portfolio
 
 :module: portofolio_plan_cli
 
-:synopsis: Entry point to the tool
+:synopsis: CLI section for portofolio configuration
 
 .. currentmodule:: portofolio_plan_cli
 
@@ -62,7 +62,7 @@ def create_type_of_investment(name: str, percentage: float):
     help="Percentage you want to invest in.",
 )
 def create_subtype_of_investment(name: str, percentage: float):
-    """Add new asset type (Large Caps, Mid Caps, ...)"""
+    """Add new asset subtype (Large Caps, Mid Caps, ...)"""
     click.echo(f"{name} with {percentage}% was added...")
     # Normalized the naming in lower cap
 
@@ -77,7 +77,7 @@ def create_subtype_of_investment(name: str, percentage: float):
     help="Percentage you want to invest in.",
 )
 def remove_type_of_investment(name: str, percentage: float):
-    """Add new asset type (Stocks, ETFs, Bonds, ...)"""
+    """Remove new asset type (Stocks, ETFs, Bonds, ...)"""
     click.echo(
         f"{portofolio_plan_name}, \
                {name} with {percentage}% was added..."
@@ -101,7 +101,7 @@ def remove_type_of_investment(name: str, percentage: float):
     help="Percentage you want to invest in.",
 )
 def remove_subtype_of_investment(name: str, percentage: float):
-    """Add new asset type (Large Caps, Mid Caps, ...)"""
+    """Remove asset subtype (Large Caps, Mid Caps, ...)"""
     click.echo(f"{name} with {percentage}% was added...")
     # Normalized the naming in lower cap
 
