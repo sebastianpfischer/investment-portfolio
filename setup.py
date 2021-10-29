@@ -23,7 +23,7 @@ setup(
     name="investporto",
     version="0.0.1",
     license="MIT",
-    description="Investment portofolio management",
+    description="Investment portfolio management",
     long_description=read("README.md"),
     author="Sebastian Fischer",
     author_email="",
@@ -50,7 +50,7 @@ setup(
     ],
     keywords=[
         "investment",
-        "portofolio",
+        "portfolio",
         "tool",
     ],
     python_requires=">=3.6",

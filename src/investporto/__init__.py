@@ -1,11 +1,11 @@
 """
-investporto - small tool that allows you to manage your investmenet portofolio
+investporto - small tool that allows you to manage your investmenet portfolio
 ******************************************************************************
 
 :module: investporto
 
 :synopsis: ``investporto`` is a small tool that allows you to manage your i
-    nvestmenet portofolio
+    nvestmenet portfolio
 
 .. currentmodule:: investporto
 
@@ -17,4 +17,4 @@ investporto - small tool that allows you to manage your investmenet portofolio
 __version__ = "0.0.1"
 
 from . import types_and_vars
-from . import cli, project_meta_cli, portofolio_plan_cli
+from . import cli, project_meta_cli, portfolio_plan_cli

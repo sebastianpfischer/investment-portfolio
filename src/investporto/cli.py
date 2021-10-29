@@ -17,10 +17,10 @@ Investment portfolio
 import click
 
 from .project_meta_cli import project_meta
-from .portofolio_plan_cli import portofolio_plan
+from .portfolio_plan_cli import portfolio_plan
 
 
-main = click.CommandCollection(sources=[project_meta, portofolio_plan])
+main = click.CommandCollection(sources=[project_meta, portfolio_plan])
 
 
 if __name__ == "__main__":

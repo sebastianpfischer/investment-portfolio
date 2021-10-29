@@ -3,7 +3,7 @@ import os
 from investporto.project_meta_cli import project_meta
 from click.testing import CliRunner, Result
 from pathlib import Path
-from investporto.types_and_vars import portofolio_plan_name
+from investporto.types_and_vars import portfolio_plan_name
 
 
 def create_dummy_project(runner: CliRunner, project_path: Path) -> Result:
@@ -79,6 +79,6 @@ def test_open_a_project():
         assert not Path(f"{project_path}.zip").is_file()
         # Check if the project files are back and complete
         assert project_path.is_dir()
-        assert (project_path / portofolio_plan_name).is_file()
+        assert (project_path / portfolio_plan_name).is_file()
         for number in range(5):
             assert Path(project_path / (str(number) + "file.csv")).is_file()

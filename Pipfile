@@ -8,6 +8,7 @@ pdbpp = "*"
 pytest = "*"
 sphinx = "*"
 sphinx-rtd-theme = "*"
+sphinx-rtd-dark-mode = "*"
 invoke = "*"
 invocations = "*"
 bump2version = "*"
@@ -20,4 +21,5 @@ coverage = "*"
 [packages]
 click = "*"
 pyzipper = "*"
+pyyaml = "*"
 investporto = {path = "."}

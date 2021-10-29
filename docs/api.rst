@@ -10,9 +10,9 @@ Project Meta Manipulation
     :members:
     :private-members:
 
-portofolio Configuration
+portfolio Configuration
 ------------------------
 
-.. automodule:: investporto.portofolio_plan_cli
+.. automodule:: investporto.portfolio_plan_cli
     :members:
     :private-members:

@@ -1,4 +1,4 @@
-Welcome to investment-portofolio's documentation!
+Welcome to investment-portfolio's documentation!
 =================================================
 
 Work in progress...

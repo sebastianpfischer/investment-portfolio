@@ -9,4 +9,4 @@ import pathlib
 PathType = typing.Union[str, pathlib.Path]
 
 # Vars
-portofolio_plan_name = pathlib.Path("porto_plan.yaml")
+portfolio_plan_name = pathlib.Path("porto_plan.yaml")

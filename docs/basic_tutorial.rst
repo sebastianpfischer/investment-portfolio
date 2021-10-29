@@ -3,11 +3,11 @@
 Basic Tutorial
 ==============
 
-In this small tutorial, we will go through the 3 necessary steps to create and manage your portofolio:
+In this small tutorial, we will go through the 3 necessary steps to create and manage your portfolio:
 
 - Create the project
-- Prepare the portofolio
-- Add stocks to the portofolio
+- Prepare the portfolio
+- Add stocks to the portfolio
 
 1. Create the project
 ---------------------
@@ -27,7 +27,7 @@ In this small tutorial, we will go through the 3 necessary steps to create and m
         investporto open temp/project.zip
         # It will reopen the project. It will also request you to type the password
 
-2. Prepare the portofolio
+2. Prepare the portfolio
 -------------------------
 
 .. code:: bash
@@ -35,7 +35,7 @@ In this small tutorial, we will go through the 3 necessary steps to create and m
     cd temp/project
     investporto tbd ... in progress
 
-3. Add stocks to the portofolio
+3. Add stocks to the portfolio
 -------------------------------
 
 .. code:: bash

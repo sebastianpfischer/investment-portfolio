@@ -21,7 +21,7 @@ import pyzipper
 from pathlib import Path
 from shutil import rmtree
 
-from .types_and_vars import PathType, portofolio_plan_name
+from .types_and_vars import PathType, portfolio_plan_name
 
 
 # Create command
@@ -36,15 +36,15 @@ def project_meta():
     "projectname",
     type=click.Path(dir_okay=True, file_okay=True, writable=True, resolve_path=True),
     required=False,
-    default="my_finantial_portofolio",
+    default="my_finantial_portfolio",
 )
 def create_project(projectname: PathType):
     """Create a project as folder structure"""
     # Create project
     projectname = Path(projectname)
     projectname.mkdir(parents=True, exist_ok=True)
-    # Create portofolio plan (draft)
-    with open((projectname / portofolio_plan_name), "w+") as porto_plan:
+    # Create portfolio plan (draft)
+    with open((projectname / portfolio_plan_name), "w+") as porto_plan:
         porto_plan.write("hello")
     click.echo(f"{projectname} was created...")
 
@@ -54,7 +54,7 @@ def create_project(projectname: PathType):
     "projectname",
     type=click.Path(dir_okay=True, file_okay=True, writable=True, resolve_path=True),
     required=False,
-    default="my_finantial_portofolio",
+    default="my_finantial_portfolio",
 )
 @click.option("-y", "--yes", is_flag=True, required=False)
 def delete_project(projectname: PathType, yes: bool):
@@ -64,7 +64,7 @@ def delete_project(projectname: PathType, yes: bool):
     if not yes:
         if input(f"are you sure you want to delete {projectname}? (y/n)") != "y":
             exit()
-    if not (projectname / portofolio_plan_name).is_file():
+    if not (projectname / portfolio_plan_name).is_file():
         click.echo("This seems not to be a supported project!")
         exit(os.EX_USAGE)
     # Delete the project with all it contains

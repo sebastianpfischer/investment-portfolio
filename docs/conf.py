@@ -28,6 +28,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinxcontrib.programoutput",
     "sphinx_autodoc_typehints",
+    "sphinx_rtd_dark_mode",
 ]
 
 source_suffix = {
