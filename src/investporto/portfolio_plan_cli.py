@@ -40,7 +40,7 @@ def project_path_option(function):
         ),
         required=False,
         help="Path to the project",
-    )
+    )(function)
     return function
 
 
@@ -52,7 +52,7 @@ def percentage_option(function):
         type=click.FLOAT,
         required=True,
         help="Percentage you want to invest in.",
-    )
+    )(function)
     return function
 
 
@@ -72,27 +72,18 @@ class Portfolio:
         self.__exit__()
 
     def __enter__(self):
-        try:
-            with open(self._path_to_yaml, "r") as portfolio_plan_file:
-                self._plan = yaml.load(portfolio_plan_file, Loader=yaml.SafeLoader)
-            # If the open was successful, return us
-            return self
-        except OSError:
-            # Exception to be better defined later on
-            click.echo("Oups, something went really wrong!")
+        with open(self._path_to_yaml, "r") as portfolio_plan_file:
+            self._plan = yaml.load(portfolio_plan_file, Loader=yaml.SafeLoader)
+        # If the open was successful, return us
+        return self
 
     def __exit__(self, exc_type, exc, exc_tb):
         # If the received values are different to None, an error occurred!
         if exc_type != exc != exc_tb != None:
             click.echo(f"Error occure: {exc_type}, {exc}, {exc_tb}")
-            exit(os.EX_IOERR)
         # No, error found, we try to save the configuration
-        try:
-            with open(self._path_to_yaml, "w") as portfolio_plan_file:
-                yaml.dump(self._plan, portfolio_plan_file, default_flow_style=False)
-        except OSError:
-            # Exception to be better defined later on
-            click.echo("Oups, something went really wrong!")
+        with open(self._path_to_yaml, "w") as portfolio_plan_file:
+            yaml.dump(self._plan, portfolio_plan_file, default_flow_style=False)
 
     def add(
         self,
@@ -121,20 +112,25 @@ class Portfolio:
 
 
 @portfolio_plan.command("add-asset-type")
-@project_path_option
-@percentage_option
 @click.argument("name", type=click.STRING, required=True, default="Stocks")
+@percentage_option
+@project_path_option
 def create_type_of_investment(name: str, percentage: float, projet_path: str):
     """Add new asset type (Stocks, ETFs, Bonds, ...)"""
     # Load the configuration stored in the yaml file
-    with portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
-        click.echo(ppn)
+    try:
+        with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
+            click.echo(ppn)
+    except OSError:
+        # Exception to be better defined later on
+        click.echo("Oups, something went really wrong with close!")
+        exit(os.EX_OSERR)
 
 
 @portfolio_plan.command("add-asset-subtype")
-@project_path_option
-@percentage_option
 @click.argument("name", type=click.STRING, required=True, default="Large Caps")
+@percentage_option
+@project_path_option
 @click.option(
     "-t",
     "--type",
@@ -150,9 +146,9 @@ def create_subtype_of_investment(name: str, percentage: float, projet_path: str)
 
 
 @portfolio_plan.command("remove-asset-type")
-@project_path_option
-@percentage_option
 @click.argument("name", type=click.STRING, required=True, default="Stocks")
+@percentage_option
+@project_path_option
 def remove_type_of_investment(name: str, percentage: float, projet_path: str):
     """Remove new asset type (Stocks, ETFs, Bonds, ...)"""
     click.echo(
@@ -162,9 +158,9 @@ def remove_type_of_investment(name: str, percentage: float, projet_path: str):
 
 
 @portfolio_plan.command("remove-asset-subtype")
-@project_path_option
-@percentage_option
 @click.argument("name", type=click.STRING, required=True, default="Large Caps")
+@percentage_option
+@project_path_option
 @click.option(
     "-t",
     "--type",
@@ -179,8 +175,8 @@ def remove_subtype_of_investment(name: str, percentage: float, projet_path: str)
 
 
 @portfolio_plan.command("assign-budget")
-@project_path_option
 @click.argument("budget", type=click.FLOAT, required=True, default=0)
+@project_path_option
 def assign_budget(budget: float, projet_path: str):
     """Assign a budget to the portfolio"""
     click.echo(f"{budget} was assign to the project!")

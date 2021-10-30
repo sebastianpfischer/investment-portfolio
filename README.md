@@ -17,6 +17,10 @@ I just want to manage my investment portfolio via a simple cli
 10. Ability to setup more complex selling strategies (algorthm based) - do not know yet how to do it.
 11. Export posibilities to excel or else
 
+## Shoulds
+
+- Use prompt (https://python-prompt-toolkit.readthedocs.io/en/master/pages/asking_for_input.html) to have autocompletion instead of click
+
 ## Warning
 
 I'm not in the finantial domain. I just try to help myselve building my portfolio and I do not want to use excel to handle it.
