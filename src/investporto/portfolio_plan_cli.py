@@ -30,6 +30,32 @@ def portfolio_plan():
     pass
 
 
+def project_path_option(function):
+    """Define the common project path option"""
+    function = click.option(
+        "-pp",
+        "--projet_path",
+        type=click.Path(
+            dir_okay=True, file_okay=False, writable=True, resolve_path=True
+        ),
+        required=False,
+        help="Path to the project",
+    )
+    return function
+
+
+def percentage_option(function):
+    """Define the common percentage option"""
+    function = click.option(
+        "-p",
+        "--percentage",
+        type=click.FLOAT,
+        required=True,
+        help="Percentage you want to invest in.",
+    )
+    return function
+
+
 class Portfolio:
     """Manage the portfolio plan you define"""
 
@@ -95,21 +121,9 @@ class Portfolio:
 
 
 @portfolio_plan.command("add-asset-type")
+@project_path_option
+@percentage_option
 @click.argument("name", type=click.STRING, required=True, default="Stocks")
-@click.option(
-    "-p",
-    "--percentage",
-    type=click.FLOAT,
-    required=True,
-    help="Percentage you want to invest in.",
-)
-@click.option(
-    "-pp",
-    "--projet_path",
-    type=click.Path(dir_okay=True, file_okay=False, writable=True, resolve_path=True),
-    required=False,
-    help="with to the project",
-)
 def create_type_of_investment(name: str, percentage: float, projet_path: str):
     """Add new asset type (Stocks, ETFs, Bonds, ...)"""
     # Load the configuration stored in the yaml file
@@ -118,6 +132,8 @@ def create_type_of_investment(name: str, percentage: float, projet_path: str):
 
 
 @portfolio_plan.command("add-asset-subtype")
+@project_path_option
+@percentage_option
 @click.argument("name", type=click.STRING, required=True, default="Large Caps")
 @click.option(
     "-t",
@@ -127,29 +143,17 @@ def create_type_of_investment(name: str, percentage: float, projet_path: str):
     default="Stocks",
     help="Type to allocate the subtype",
 )
-@click.option(
-    "-p",
-    "--percentage",
-    type=click.FLOAT,
-    required=True,
-    help="Percentage you want to invest in.",
-)
-def create_subtype_of_investment(name: str, percentage: float):
+def create_subtype_of_investment(name: str, percentage: float, projet_path: str):
     """Add new asset subtype (Large Caps, Mid Caps, ...)"""
     click.echo(f"{name} with {percentage}% was added...")
     # Normalized the naming in lower cap
 
 
 @portfolio_plan.command("remove-asset-type")
+@project_path_option
+@percentage_option
 @click.argument("name", type=click.STRING, required=True, default="Stocks")
-@click.option(
-    "-p",
-    "--percentage",
-    type=click.FLOAT,
-    required=True,
-    help="Percentage you want to invest in.",
-)
-def remove_type_of_investment(name: str, percentage: float):
+def remove_type_of_investment(name: str, percentage: float, projet_path: str):
     """Remove new asset type (Stocks, ETFs, Bonds, ...)"""
     click.echo(
         f"{portfolio_plan_name}, \
@@ -158,6 +162,8 @@ def remove_type_of_investment(name: str, percentage: float):
 
 
 @portfolio_plan.command("remove-asset-subtype")
+@project_path_option
+@percentage_option
 @click.argument("name", type=click.STRING, required=True, default="Large Caps")
 @click.option(
     "-t",
@@ -166,34 +172,30 @@ def remove_type_of_investment(name: str, percentage: float):
     required=True,
     help="Type to allocate the subtype",
 )
-@click.option(
-    "-p",
-    "--percentage",
-    type=click.FLOAT,
-    required=True,
-    help="Percentage you want to invest in.",
-)
-def remove_subtype_of_investment(name: str, percentage: float):
+def remove_subtype_of_investment(name: str, percentage: float, projet_path: str):
     """Remove asset subtype (Large Caps, Mid Caps, ...)"""
     click.echo(f"{name} with {percentage}% was added...")
     # Normalized the naming in lower cap
 
 
 @portfolio_plan.command("assign-budget")
+@project_path_option
 @click.argument("budget", type=click.FLOAT, required=True, default=0)
-def assign_budget(budget: float):
+def assign_budget(budget: float, projet_path: str):
     """Assign a budget to the portfolio"""
     click.echo(f"{budget} was assign to the project!")
 
 
 @portfolio_plan.command("verify-allocation")
-def verify_allocation():
+@project_path_option
+def verify_allocation(projet_path: str):
     """Verify if the allocation reach really the 100% per type
     and the same per subtype"""
     click.echo("Will soon be available!")
 
 
 @portfolio_plan.command("visualize-allocation")
-def visualize_allocation():
+@project_path_option
+def visualize_allocation(projet_path: str):
     """Visualize the project allocation"""
     click.echo("Will soon be available!")
