@@ -21,6 +21,7 @@ import os
 from .types_and_vars import portfolio_plan_name
 from pathlib import Path
 import yaml
+import collections.abc
 
 
 #  Create the portfolio plan
@@ -69,7 +70,7 @@ class Portfolio:
         self.__enter__()
 
     def close(self):
-        self.__exit__()
+        self.__exit__(None, None, None)
 
     def __enter__(self):
         with open(self._path_to_yaml, "r") as portfolio_plan_file:
@@ -85,6 +86,22 @@ class Portfolio:
         with open(self._path_to_yaml, "w") as portfolio_plan_file:
             yaml.dump(self._plan, portfolio_plan_file, default_flow_style=False)
 
+    def _update_dict(
+        self, dict_to_update: dict, dict_to_update_with: dict, *, delete: bool = False
+    ):
+        for key, value in dict_to_update_with.items():
+            if isinstance(value, collections.abc.Mapping):
+                # If value is a dict, we have to have a recursion
+                dict_to_update[key] = self._update_dict(
+                    dict_to_update.get(key, {}), value, delete=delete
+                )
+            else:
+                if not delete:
+                    dict_to_update[key] = value
+                else:
+                    del dict_to_update[key]
+        return dict_to_update
+
     def add(
         self,
         asset_type: str,
@@ -92,16 +109,42 @@ class Portfolio:
         asset_subtype: str = "",
         subpercentage: float = 0,
     ):
-        raise NotImplementedError
+        element_to_add = None
+        # Set the assets to lowercase (to minimize typos)
+        asset_type = asset_type.lower()
+        asset_subtype = asset_subtype.lower()
+        # Separate in 2 cases with prio:
+        # 1 - type was given
+        # 2 - subtype was given
+        if asset_subtype:
+            element_to_add = {
+                asset_type: {"subtypes": {asset_subtype: {"percentage": subpercentage}}}
+            }
+        elif asset_type:
+            element_to_add = {"percentage": percentage}
+        # If none of the above cases was valid, we raise an error
+        if element_to_add:
+            self._update_dict(self._plan, element_to_add)
+        else:
+            raise IOError
 
-    def delete(
-        self,
-        asset_type: str,
-        percentage: float = 0,
-        asset_subtype: str = "",
-        subpercentage: float = 0,
-    ):
-        raise NotImplementedError
+    def delete(self, asset_type: str, asset_subtype: str = ""):
+        element_to_delete = None
+        # Set the assets to lowercase (to minimize typos)
+        asset_type = asset_type.lower()
+        asset_subtype = asset_subtype.lower()
+        # Separate in 2 cases with prio:
+        # 1 - type was given
+        # 2 - subtype was given
+        if asset_subtype:
+            element_to_delete = {asset_type: {"subtypes": {asset_subtype: None}}}
+        elif asset_type:
+            element_to_delete = {"percentage": None}
+        # If none of the above cases was valid, we raise an error
+        if element_to_delete:
+            self._update_dict(self._plan, element_to_delete, delete=True)
+        else:
+            raise IOError
 
     def __str__(self) -> str:
         return f"{self._plan}"
