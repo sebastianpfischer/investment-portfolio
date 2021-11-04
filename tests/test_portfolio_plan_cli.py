@@ -114,7 +114,6 @@ def test_portfolio_class_add(create_dummy_project):
     _, all_keys_found, all_values_found = comparaison(
         portfolio._plan, {new_asset_type.lower(): {"percentage": new_asset_percentage}}
     )
-    print(f"--> {portfolio._plan}")
     assert all_keys_found
     assert all_values_found
     # Clean resources
@@ -134,13 +133,14 @@ def test_portfolio_class_add(create_dummy_project):
     _, all_keys_found, all_values_found = comparaison(
         portfolio._plan,
         {
-            new_asset_type: {
+            new_asset_type.lower(): {
                 "percentage": new_asset_percentage,
-                "subtype": {new_asset_subtype: {"percentage": new_asset_subpercentage}},
+                "subtypes": {
+                    new_asset_subtype.lower(): {"percentage": new_asset_subpercentage}
+                },
             }
         },
     )
-    print(f"--> {portfolio._plan}")
     assert all_keys_found
     assert all_values_found
     # Clean resources
@@ -163,8 +163,9 @@ def test_portfolio_class_delete(create_dummy_project):
     portfolio = Portfolio(project_plan)
     portfolio.open()
     _, all_keys_found, all_values_found = comparaison(
-        portfolio._plan, {new_asset_type: {new_asset_subtype: None}}
+        portfolio._plan, {new_asset_type.lower(): {new_asset_subtype.lower(): None}}
     )
+    print(f"--> {portfolio._plan}")
     assert not all_keys_found
     assert not all_values_found
     # Clean resources
@@ -173,6 +174,7 @@ def test_portfolio_class_delete(create_dummy_project):
 
     # Test 2: remove a type
     with Portfolio(project_plan) as plan:
+        print(f"--> {plan._plan}")
         plan.delete(asset_type=new_asset_type)
     # Reopen the file and check if the element was really added
     portfolio = Portfolio(project_plan)
@@ -180,8 +182,8 @@ def test_portfolio_class_delete(create_dummy_project):
     _, all_keys_found, all_values_found = comparaison(
         portfolio._plan, {new_asset_type: None}
     )
-    assert all_keys_found
-    assert all_values_found
+    assert not all_keys_found
+    assert not all_values_found
     # Clean resources
     portfolio.close()
     del portfolio

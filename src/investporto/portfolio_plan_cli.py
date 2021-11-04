@@ -121,7 +121,7 @@ class Portfolio:
                 asset_type: {"subtypes": {asset_subtype: {"percentage": subpercentage}}}
             }
         elif asset_type:
-            element_to_add = {"percentage": percentage}
+            element_to_add = {asset_type: {"percentage": percentage}}
         # If none of the above cases was valid, we raise an error
         if element_to_add:
             self._update_dict(self._plan, element_to_add)
@@ -139,7 +139,7 @@ class Portfolio:
         if asset_subtype:
             element_to_delete = {asset_type: {"subtypes": {asset_subtype: None}}}
         elif asset_type:
-            element_to_delete = {"percentage": None}
+            element_to_delete = {asset_type: None}
         # If none of the above cases was valid, we raise an error
         if element_to_delete:
             self._update_dict(self._plan, element_to_delete, delete=True)
@@ -163,6 +163,7 @@ def create_type_of_investment(name: str, percentage: float, projet_path: str):
     # Load the configuration stored in the yaml file
     try:
         with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
+            ppn.add(asset_type=name, percentage=percentage)
             click.echo(ppn)
     except OSError:
         # Exception to be better defined later on
