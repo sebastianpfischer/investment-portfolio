@@ -22,6 +22,7 @@ from .types_and_vars import portfolio_plan_name
 from pathlib import Path
 import yaml
 import collections.abc
+import pandas as pd
 
 
 #  Create the portfolio plan
@@ -64,6 +65,7 @@ class Portfolio:
         """open the yaml file and store the config"""
         self._path_to_yaml = path_to_yaml
         self._plan = {}
+        self.dataframe = None
         pass
 
     def open(self):
@@ -75,6 +77,10 @@ class Portfolio:
     def __enter__(self):
         with open(self._path_to_yaml, "r") as portfolio_plan_file:
             self._plan = yaml.load(portfolio_plan_file, Loader=yaml.SafeLoader)
+            # if yaml file is empty, instead of None, provide an empty dict
+            # for consistency
+            if not self._plan:
+                self._plan = {}
         # If the open was successful, return us
         return self
 
@@ -157,6 +163,17 @@ class Portfolio:
             self._update_dict(self._plan, element_to_remove, remove=True)
         else:
             raise IOError
+
+    def load_dataframe(self):
+        """The idea is to reduce load if we do not manipulate the frame"""
+        if self._plan:
+            self.dataframe = pd.DataFrame.from_dict(self._plan)
+
+    def check_allocation(self):
+        pass
+
+    def visualize_allocation(self):
+        return repr(self.dataframe)
 
     def __str__(self) -> str:
         return f"{self._plan}"
@@ -282,4 +299,12 @@ def verify_allocation(projet_path: str):
 @project_path_option
 def visualize_allocation(projet_path: str):
     """Visualize the project allocation"""
-    click.echo("Will soon be available!")
+    # Load the configuration stored in the yaml file
+    try:
+        with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
+            ppn.load_dataframe()
+            click.echo(ppn.visualize_allocation())
+    except OSError:
+        # Exception to be better defined later on
+        click.echo("Oups, something went really wrong with the config access!")
+        exit(os.EX_OSERR)

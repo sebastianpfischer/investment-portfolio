@@ -54,7 +54,7 @@ setup(
         "tool",
     ],
     python_requires=">=3.6",
-    install_requires=["click", "pyyaml", "pyzipper"],
+    install_requires=["click", "pyyaml", "pyzipper", "pandas"],
     tests_require=["pytest", "pytest-mock", "coverage"],
     extras_require={},
     setup_requires=[],

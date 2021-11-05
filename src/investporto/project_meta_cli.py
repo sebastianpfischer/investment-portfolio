@@ -45,7 +45,7 @@ def create_project(projectname: PathType):
     projectname.mkdir(parents=True, exist_ok=True)
     # Create portfolio plan (draft)
     with open((projectname / portfolio_plan_name), "w+") as porto_plan:
-        porto_plan.write("hello")
+        pass
     click.echo(f"{projectname} was created...")
 
 

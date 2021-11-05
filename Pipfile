@@ -22,4 +22,5 @@ coverage = "*"
 click = "*"
 pyzipper = "*"
 pyyaml = "*"
+pandas = "*"
 investporto = {path = "."}

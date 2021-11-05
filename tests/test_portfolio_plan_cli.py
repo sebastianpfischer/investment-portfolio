@@ -1,6 +1,6 @@
 import pytest
 import os
-from investporto.portfolio_plan_cli import Portfolio
+from investporto.portfolio_plan_cli import Portfolio, portfolio_plan
 from click.testing import CliRunner, Result
 from pathlib import Path
 import collections
@@ -185,3 +185,26 @@ def test_portfolio_class_remove(create_dummy_project):
     # Clean resources
     portfolio.close()
     del portfolio
+
+
+def test_empty_start(create_dummy_project):
+    """The idea is to test if we can start with an empty file"""
+    runner, project_path, project_plan = create_dummy_project
+    # First we need to empty the repo
+    with open(project_plan, "w") as portfolio_plan_file:
+        portfolio_plan_file.write("")
+    # Test 1: we check if the add work
+    try:
+        runner.invoke(
+            portfolio_plan,
+            ["add-asset-class", "Stocks", "-p", "55", "-pp", str(project_path)],
+        )
+    except Exception:
+        assert False
+    # Test 2: we check if the assign work
+    with open(project_plan, "w") as portfolio_plan_file:
+        portfolio_plan_file.write("")
+    try:
+        runner.invoke(portfolio_plan, ["assign-budget", "10000"])
+    except Exception:
+        assert False
