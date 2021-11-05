@@ -87,16 +87,22 @@ class Portfolio:
             yaml.dump(self._plan, portfolio_plan_file, default_flow_style=False)
 
     def _update_dict(
-        self, dict_to_update: dict, dict_to_update_with: dict, *, delete: bool = False
+        self, dict_to_update: dict, dict_to_update_with: dict, *, remove: bool = False
     ):
+        """Update the configuration with the request
+
+        .. warning::
+            This algorithm is not smart and cannot detect today if the elements
+            to add or delete already exist in the dict_to_update.
+        """
         for key, value in dict_to_update_with.items():
             if isinstance(value, collections.abc.Mapping):
                 # If value is a dict, we have to have a recursion
                 dict_to_update[key] = self._update_dict(
-                    dict_to_update.get(key, {}), value, delete=delete
+                    dict_to_update.get(key, {}), value, remove=remove
                 )
             else:
-                if not delete:
+                if not remove:
                     dict_to_update[key] = value
                 else:
                     del dict_to_update[key]
@@ -104,45 +110,47 @@ class Portfolio:
 
     def add(
         self,
-        asset_type: str,
+        asset_class: str,
         percentage: float = 0,
-        asset_subtype: str = "",
+        asset_subclass: str = "",
         subpercentage: float = 0,
     ):
         element_to_add = None
         # Set the assets to lowercase (to minimize typos)
-        asset_type = asset_type.lower()
-        asset_subtype = asset_subtype.lower()
+        asset_class = asset_class.lower()
+        asset_subclass = asset_subclass.lower()
         # Separate in 2 cases with prio:
-        # 1 - type was given
-        # 2 - subtype was given
-        if asset_subtype:
+        # 1 - class was given
+        # 2 - subclass was given
+        if asset_subclass:
             element_to_add = {
-                asset_type: {"subtypes": {asset_subtype: {"percentage": subpercentage}}}
+                asset_class: {
+                    "subclasss": {asset_subclass: {"percentage": subpercentage}}
+                }
             }
-        elif asset_type:
-            element_to_add = {asset_type: {"percentage": percentage}}
+        elif asset_class:
+            element_to_add = {asset_class: {"percentage": percentage}}
         # If none of the above cases was valid, we raise an error
         if element_to_add:
             self._update_dict(self._plan, element_to_add)
         else:
             raise IOError
 
-    def delete(self, asset_type: str, asset_subtype: str = ""):
-        element_to_delete = None
+    def remove(self, asset_class: str, asset_subclass: str = ""):
+        element_to_remove = None
         # Set the assets to lowercase (to minimize typos)
-        asset_type = asset_type.lower()
-        asset_subtype = asset_subtype.lower()
+        asset_class = asset_class.lower()
+        asset_subclass = asset_subclass.lower()
         # Separate in 2 cases with prio:
-        # 1 - type was given
-        # 2 - subtype was given
-        if asset_subtype:
-            element_to_delete = {asset_type: {"subtypes": {asset_subtype: None}}}
-        elif asset_type:
-            element_to_delete = {asset_type: None}
+        # 1 - class was given
+        # 2 - subclass was given
+        if asset_subclass:
+            element_to_remove = {asset_class: {"subclasss": {asset_subclass: None}}}
+        elif asset_class:
+            element_to_remove = {asset_class: None}
         # If none of the above cases was valid, we raise an error
-        if element_to_delete:
-            self._update_dict(self._plan, element_to_delete, delete=True)
+        if element_to_remove:
+            self._update_dict(self._plan, element_to_remove, remove=True)
         else:
             raise IOError
 
@@ -150,70 +158,78 @@ class Portfolio:
         return f"{self._plan}"
 
     def __repr__(self) -> str:
-        print(f"{self._plan}")
         return self.__str__()
 
 
-@portfolio_plan.command("add-asset-type")
+@portfolio_plan.command("add-asset-class")
 @click.argument("name", type=click.STRING, required=True, default="Stocks")
 @percentage_option
 @project_path_option
-def create_type_of_investment(name: str, percentage: float, projet_path: str):
-    """Add new asset type (Stocks, ETFs, Bonds, ...)"""
+def create_class_of_investment(name: str, percentage: float, projet_path: str):
+    """Add new asset class (Stocks, ETFs, Bonds, ...)"""
     # Load the configuration stored in the yaml file
     try:
         with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
-            ppn.add(asset_type=name, percentage=percentage)
+            ppn.add(asset_class=name, percentage=percentage)
             click.echo(ppn)
     except OSError:
         # Exception to be better defined later on
-        click.echo("Oups, something went really wrong with close!")
+        click.echo("Oups, something went really wrong with the config access!")
         exit(os.EX_OSERR)
 
 
-@portfolio_plan.command("add-asset-subtype")
+@portfolio_plan.command("add-asset-subclass")
 @click.argument("name", type=click.STRING, required=True, default="Large Caps")
 @percentage_option
 @project_path_option
 @click.option(
-    "-t",
-    "--type",
+    "-ac",
+    "--asset-class",
     type=click.STRING,
     required=True,
     default="Stocks",
-    help="Type to allocate the subtype",
+    help="Class to allocate the subclass",
 )
-def create_subtype_of_investment(name: str, percentage: float, projet_path: str):
-    """Add new asset subtype (Large Caps, Mid Caps, ...)"""
-    click.echo(f"{name} with {percentage}% was added...")
-    # Normalized the naming in lower cap
+def create_subclass_of_investment(
+    name: str, percentage: float, projet_path: str, asset_class: str
+):
+    """Add new asset subclass (Large Caps, Mid Caps, ...)"""
+    # Load the configuration stored in the yaml file
+    try:
+        with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
+            ppn.add(asset_class=t, percentage=percentage)
+            click.echo(ppn)
+    except OSError:
+        # Exception to be better defined later on
+        click.echo("Oups, something went really wrong with the config access!")
+        exit(os.EX_OSERR)
 
 
-@portfolio_plan.command("remove-asset-type")
+@portfolio_plan.command("remove-asset-class")
 @click.argument("name", type=click.STRING, required=True, default="Stocks")
 @percentage_option
 @project_path_option
-def remove_type_of_investment(name: str, percentage: float, projet_path: str):
-    """Remove new asset type (Stocks, ETFs, Bonds, ...)"""
+def remove_class_of_investment(name: str, percentage: float, projet_path: str):
+    """Remove new asset class (Stocks, ETFs, Bonds, ...)"""
     click.echo(
         f"{portfolio_plan_name}, \
                {name} with {percentage}% was added..."
     )
 
 
-@portfolio_plan.command("remove-asset-subtype")
+@portfolio_plan.command("remove-asset-subclass")
 @click.argument("name", type=click.STRING, required=True, default="Large Caps")
 @percentage_option
 @project_path_option
 @click.option(
-    "-t",
-    "--type",
+    "-ac",
+    "--asset-class",
     type=click.STRING,
     required=True,
-    help="Type to allocate the subtype",
+    help="Class to allocate the subclass",
 )
-def remove_subtype_of_investment(name: str, percentage: float, projet_path: str):
-    """Remove asset subtype (Large Caps, Mid Caps, ...)"""
+def remove_subclass_of_investment(name: str, percentage: float, projet_path: str):
+    """Remove asset subclass (Large Caps, Mid Caps, ...)"""
     click.echo(f"{name} with {percentage}% was added...")
     # Normalized the naming in lower cap
 
@@ -229,8 +245,8 @@ def assign_budget(budget: float, projet_path: str):
 @portfolio_plan.command("verify-allocation")
 @project_path_option
 def verify_allocation(projet_path: str):
-    """Verify if the allocation reach really the 100% per type
-    and the same per subtype"""
+    """Verify if the allocation reach really the 100% per class
+    and the same per subclass"""
     click.echo("Will soon be available!")
 
 

@@ -9,12 +9,12 @@ from investporto.types_and_vars import portfolio_plan_name
 file_content = """
 etfs:
   percentage: 30
-  subtypes:
+  subclasss:
     big_market_caps:
       percentage: 100
 stocks:
   percentage: 70
-  subtypes:
+  subclasss:
     big_market_caps:
       percentage: 35
     mid_market_caps:
@@ -23,12 +23,12 @@ stocks:
 dict_content = {
     "stocks": {
         "percentage": 70,
-        "subtypes": {
+        "subclasss": {
             "big_market_caps": {"percentage": 35},
             "mid_market_caps": {"percentage": 35},
         },
     },
-    "etfs": {"percentage": 30, "subtypes": {"big_market_caps": {"percentage": 100}}},
+    "etfs": {"percentage": 30, "subclasss": {"big_market_caps": {"percentage": 100}}},
 }
 
 
@@ -100,19 +100,19 @@ def test_portfolio_class_add(create_dummy_project):
     # Create the dummy project
     _, _, project_plan = create_dummy_project
     # Define different elements to add to the project
-    new_asset_type = "Bonds"
+    new_asset_class = "Bonds"
     new_asset_percentage = 20
-    new_asset_subtype = "State"
+    new_asset_subclass = "State"
     new_asset_subpercentage = 89
 
-    # Test 1: add a type
+    # Test 1: add a class
     with Portfolio(project_plan) as plan:
-        plan.add(asset_type=new_asset_type, percentage=new_asset_percentage)
+        plan.add(asset_class=new_asset_class, percentage=new_asset_percentage)
     # Reopen the file and check if the element was really added
     portfolio = Portfolio(project_plan)
     portfolio.open()
     _, all_keys_found, all_values_found = comparaison(
-        portfolio._plan, {new_asset_type.lower(): {"percentage": new_asset_percentage}}
+        portfolio._plan, {new_asset_class.lower(): {"percentage": new_asset_percentage}}
     )
     assert all_keys_found
     assert all_values_found
@@ -120,11 +120,11 @@ def test_portfolio_class_add(create_dummy_project):
     portfolio.close()
     del portfolio
 
-    # Test 2: add a subtype
+    # Test 2: add a subclass
     with Portfolio(project_plan) as plan:
         plan.add(
-            asset_type=new_asset_type,
-            asset_subtype=new_asset_subtype,
+            asset_class=new_asset_class,
+            asset_subclass=new_asset_subclass,
             subpercentage=new_asset_subpercentage,
         )
     # Reopen the file and check if the element was really added
@@ -133,10 +133,10 @@ def test_portfolio_class_add(create_dummy_project):
     _, all_keys_found, all_values_found = comparaison(
         portfolio._plan,
         {
-            new_asset_type.lower(): {
+            new_asset_class.lower(): {
                 "percentage": new_asset_percentage,
-                "subtypes": {
-                    new_asset_subtype.lower(): {"percentage": new_asset_subpercentage}
+                "subclasss": {
+                    new_asset_subclass.lower(): {"percentage": new_asset_subpercentage}
                 },
             }
         },
@@ -148,39 +148,37 @@ def test_portfolio_class_add(create_dummy_project):
     del portfolio
 
 
-def test_portfolio_class_delete(create_dummy_project):
+def test_portfolio_class_remove(create_dummy_project):
     """Test the deletion of several elements are possible"""
     # Create the dummy project
     _, _, project_plan = create_dummy_project
     # Define different elements to add to the project
-    new_asset_type = "ETFs"
-    new_asset_subtype = "big_market_caps"
+    new_asset_class = "ETFs"
+    new_asset_subclass = "big_market_caps"
 
-    # Test 1: remove a subtype
+    # Test 1: remove a subclass
     with Portfolio(project_plan) as plan:
-        plan.delete(asset_type=new_asset_type, asset_subtype=new_asset_subtype)
+        plan.remove(asset_class=new_asset_class, asset_subclass=new_asset_subclass)
     # Reopen the file and check if the element was really added
     portfolio = Portfolio(project_plan)
     portfolio.open()
     _, all_keys_found, all_values_found = comparaison(
-        portfolio._plan, {new_asset_type.lower(): {new_asset_subtype.lower(): None}}
+        portfolio._plan, {new_asset_class.lower(): {new_asset_subclass.lower(): None}}
     )
-    print(f"--> {portfolio._plan}")
     assert not all_keys_found
     assert not all_values_found
     # Clean resources
     portfolio.close()
     del portfolio
 
-    # Test 2: remove a type
+    # Test 2: remove a class
     with Portfolio(project_plan) as plan:
-        print(f"--> {plan._plan}")
-        plan.delete(asset_type=new_asset_type)
+        plan.remove(asset_class=new_asset_class)
     # Reopen the file and check if the element was really added
     portfolio = Portfolio(project_plan)
     portfolio.open()
     _, all_keys_found, all_values_found = comparaison(
-        portfolio._plan, {new_asset_type: None}
+        portfolio._plan, {new_asset_class: None}
     )
     assert not all_keys_found
     assert not all_values_found
