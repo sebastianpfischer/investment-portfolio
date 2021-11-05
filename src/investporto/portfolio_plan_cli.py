@@ -108,6 +108,10 @@ class Portfolio:
                     del dict_to_update[key]
         return dict_to_update
 
+    def update_dict(self, dict_to_update_with: dict, *, remove: bool = False):
+        """Update the current configuration with a provided dict"""
+        return self._update_dict(self._plan, dict_to_update_with, remove=remove)
+
     def add(
         self,
         asset_class: str,
@@ -197,7 +201,9 @@ def create_subclass_of_investment(
     # Load the configuration stored in the yaml file
     try:
         with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
-            ppn.add(asset_class=t, percentage=percentage)
+            ppn.add(
+                asset_class=asset_class, asset_subclass=name, subpercentage=percentage
+            )
             click.echo(ppn)
     except OSError:
         # Exception to be better defined later on
@@ -211,10 +217,15 @@ def create_subclass_of_investment(
 @project_path_option
 def remove_class_of_investment(name: str, percentage: float, projet_path: str):
     """Remove new asset class (Stocks, ETFs, Bonds, ...)"""
-    click.echo(
-        f"{portfolio_plan_name}, \
-               {name} with {percentage}% was added..."
-    )
+    # Load the configuration stored in the yaml file
+    try:
+        with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
+            ppn.remove(asset_class=name)
+            click.echo(ppn)
+    except OSError:
+        # Exception to be better defined later on
+        click.echo("Oups, something went really wrong with the config access!")
+        exit(os.EX_OSERR)
 
 
 @portfolio_plan.command("remove-asset-subclass")
@@ -228,10 +239,19 @@ def remove_class_of_investment(name: str, percentage: float, projet_path: str):
     required=True,
     help="Class to allocate the subclass",
 )
-def remove_subclass_of_investment(name: str, percentage: float, projet_path: str):
+def remove_subclass_of_investment(
+    name: str, percentage: float, projet_path: str, asset_class: str
+):
     """Remove asset subclass (Large Caps, Mid Caps, ...)"""
-    click.echo(f"{name} with {percentage}% was added...")
-    # Normalized the naming in lower cap
+    # Load the configuration stored in the yaml file
+    try:
+        with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
+            ppn.remove(asset_class=asset_class, asset_subclass=name)
+            click.echo(ppn)
+    except OSError:
+        # Exception to be better defined later on
+        click.echo("Oups, something went really wrong with the config access!")
+        exit(os.EX_OSERR)
 
 
 @portfolio_plan.command("assign-budget")
@@ -239,7 +259,15 @@ def remove_subclass_of_investment(name: str, percentage: float, projet_path: str
 @project_path_option
 def assign_budget(budget: float, projet_path: str):
     """Assign a budget to the portfolio"""
-    click.echo(f"{budget} was assign to the project!")
+    # Load the configuration stored in the yaml file
+    try:
+        with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
+            ppn.update_dict({"budget": budget})
+            click.echo(ppn)
+    except OSError:
+        # Exception to be better defined later on
+        click.echo("Oups, something went really wrong with the config access!")
+        exit(os.EX_OSERR)
 
 
 @portfolio_plan.command("verify-allocation")
