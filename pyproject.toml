@@ -1,0 +1,82 @@
+[tool.poetry]
+name = "investporto"
+version = "0.1.0"
+description = "Investment portfolio management"
+authors = ["sebastianpfischer <sebastian.fischer5@bosch.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "investporto", from = "src" }
+]
+keywords = [
+    "investment",
+    "portfolio",
+    "tool",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Unix",
+    "Operating System :: POSIX",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+click = "^8.1.3"
+PyYAML = "^6.0"
+pyzipper = "^0.3.6"
+pandas = "^1.5.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.1.3"
+pytest-mock = "^3.8.2"
+coverage = "^6.4.4"
+invoke = "^1.7.1"
+pdbpp = "^0.10.3"
+Sphinx = "^5.1.1"
+sphinx-rtd-theme = "^1.0.0"
+sphinx-rtd-dark-mode = "^1.2.4"
+pytest-cov = "^3.0.0"
+sphinxcontrib-programoutput = "^0.17"
+sphinx-autodoc-typehints = "^1.19.2"
+
+[tool.poetry.scripts]
+investporto = 'investporto.cli:main'
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests/"
+]
+addopts = """\
+    --verbose \
+    --log-level=INFO \
+    --cov=./src/investporto/ \
+    --cov=. \
+    --cov-report=html \
+    --cov-report html:./tests/coverage_report.html \
+    --cov-config=.coveragerc
+    """
+
+[tool.coverage.run]
+omit = [
+    "*/tests/*",
+    "*/docs/*",
+    "*/tasks.py",
+    "*__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = ["pass", "def __repr__" ,"pragma: no cover","if TYPE_CHECKING:"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
