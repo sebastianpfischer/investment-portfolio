@@ -25,8 +25,8 @@ With `Pipenv <https://github.com/pypa/pipenv>`__ :
 
    git clone https://github.com/sebastianpfischer/investment-portfolio.git
    cd investment-portfolio
-   pipenv install --dev
-   pipenv shell
+   poetry install
+   poetry shell
 
 Usage
 -----

@@ -1,5 +1,4 @@
 import pytest
-import os
 from investporto.portfolio_plan_cli import Portfolio, portfolio_plan
 from click.testing import CliRunner, Result
 from pathlib import Path
@@ -7,29 +6,21 @@ import collections
 from investporto.types_and_vars import portfolio_plan_name
 
 file_content = """
-etfs:
-  percentage: 30
-  subclasss:
-    big_market_caps:
-      percentage: 100
-stocks:
-  percentage: 70
-  subclasss:
-    big_market_caps:
-      percentage: 35
-    mid_market_caps:
-      percentage: 35
+'name': 'entry'
+'children':
+    - 'name': 'etfs'
+      'percentage': 30
+      'children':
+          - 'name': 'big_market_caps'
+            'percentage': 100
+    - 'name': 'stocks'
+      'percentage': 70
+      'children':
+          - 'name': 'big_market_caps'
+            'percentage': 50
+          - 'name': 'mid_market_caps'
+            'percentage': 40.0
 """
-dict_content = {
-    "stocks": {
-        "percentage": 70,
-        "subclasss": {
-            "big_market_caps": {"percentage": 35},
-            "mid_market_caps": {"percentage": 35},
-        },
-    },
-    "etfs": {"percentage": 30, "subclasss": {"big_market_caps": {"percentage": 100}}},
-}
 
 
 @pytest.fixture
@@ -52,16 +43,19 @@ def create_dummy_project():
     pass
 
 
-def test_portfolio_class_open(create_dummy_project):
-    """Test portfolio openning"""
+def test_portfolio_tree_class_open(create_dummy_project):
     _, _, project_plan = create_dummy_project
     portfolio = Portfolio(project_plan)
     portfolio.open()
     # Check that the received content is the one expected to read
-    assert dict_content == portfolio._plan
+    to_get_class_name = ["etfs", "stocks"]
+    to_get_class_percentage = [30, 70]
+    for child in portfolio._plan.children:
+        assert child.name in to_get_class_name
+        assert child.percentage in to_get_class_percentage
 
 
-def test_portfolio_class_closing(create_dummy_project):
+def test_portfolio_tree_class_closing(create_dummy_project):
     """Test if the closing of a project is working"""
     _, _, project_plan = create_dummy_project
     with Portfolio(project_plan):
@@ -75,136 +69,183 @@ def test_portfolio_class_closing(create_dummy_project):
     # Therefor, I will just reopen the file and compare its content...
     portfolio = Portfolio(project_plan)
     portfolio.open()
-    assert dict_content == portfolio._plan
+    # Check that the received content is the one expected to read
+    to_get_class_name = ["etfs", "stocks"]
+    to_get_class_percentage = [30, 70]
+    for child in portfolio._plan.children:
+        assert child.name in to_get_class_name
+        assert child.percentage in to_get_class_percentage
 
 
-def comparaison(base, cmp_with):
-    all_keys_found = True
-    all_values_found = True
-    for key, value in cmp_with.items():
-        if isinstance(value, collections.abc.Mapping):
-            base[key], returned_key_check, returned_value_check = comparaison(
-                base.get(key, {}), value
-            )
-            all_keys_found &= returned_key_check
-            all_values_found &= returned_value_check
-        else:
-            all_values_found &= value in base.values()
-            all_keys_found &= key in base.keys()
-    return base, all_keys_found, all_values_found
-
-
-def test_portfolio_class_add(create_dummy_project):
-    """Test the successful addition of several elements
-    into the project plan"""
-    # Create the dummy project
+def test_portfolio_tree_class_empty_start(create_dummy_project):
     _, _, project_plan = create_dummy_project
-    # Define different elements to add to the project
-    new_asset_class = "Bonds"
-    new_asset_percentage = 20
-    new_asset_subclass = "State"
-    new_asset_subpercentage = 89
-
-    # Test 1: add a class
-    with Portfolio(project_plan) as plan:
-        plan.add(asset_class=new_asset_class, percentage=new_asset_percentage)
-    # Reopen the file and check if the element was really added
-    portfolio = Portfolio(project_plan)
-    portfolio.open()
-    _, all_keys_found, all_values_found = comparaison(
-        portfolio._plan, {new_asset_class.lower(): {"percentage": new_asset_percentage}}
-    )
-    assert all_keys_found
-    assert all_values_found
-    # Clean resources
-    portfolio.close()
-    del portfolio
-
-    # Test 2: add a subclass
-    with Portfolio(project_plan) as plan:
-        plan.add(
-            asset_class=new_asset_class,
-            asset_subclass=new_asset_subclass,
-            subpercentage=new_asset_subpercentage,
-        )
-    # Reopen the file and check if the element was really added
-    portfolio = Portfolio(project_plan)
-    portfolio.open()
-    _, all_keys_found, all_values_found = comparaison(
-        portfolio._plan,
-        {
-            new_asset_class.lower(): {
-                "percentage": new_asset_percentage,
-                "subclasss": {
-                    new_asset_subclass.lower(): {"percentage": new_asset_subpercentage}
-                },
-            }
-        },
-    )
-    assert all_keys_found
-    assert all_values_found
-    # Clean resources
-    portfolio.close()
-    del portfolio
-
-
-def test_portfolio_class_remove(create_dummy_project):
-    """Test the deletion of several elements are possible"""
-    # Create the dummy project
-    _, _, project_plan = create_dummy_project
-    # Define different elements to add to the project
-    new_asset_class = "ETFs"
-    new_asset_subclass = "big_market_caps"
-
-    # Test 1: remove a subclass
-    with Portfolio(project_plan) as plan:
-        plan.remove(asset_class=new_asset_class, asset_subclass=new_asset_subclass)
-    # Reopen the file and check if the element was really added
-    portfolio = Portfolio(project_plan)
-    portfolio.open()
-    _, all_keys_found, all_values_found = comparaison(
-        portfolio._plan, {new_asset_class.lower(): {new_asset_subclass.lower(): None}}
-    )
-    assert not all_keys_found
-    assert not all_values_found
-    # Clean resources
-    portfolio.close()
-    del portfolio
-
-    # Test 2: remove a class
-    with Portfolio(project_plan) as plan:
-        plan.remove(asset_class=new_asset_class)
-    # Reopen the file and check if the element was really added
-    portfolio = Portfolio(project_plan)
-    portfolio.open()
-    _, all_keys_found, all_values_found = comparaison(
-        portfolio._plan, {new_asset_class: None}
-    )
-    assert not all_keys_found
-    assert not all_values_found
-    # Clean resources
-    portfolio.close()
-    del portfolio
-
-
-def test_empty_start(create_dummy_project):
-    """The idea is to test if we can start with an empty file"""
-    runner, project_path, project_plan = create_dummy_project
     # First we need to empty the repo
     with open(project_plan, "w") as portfolio_plan_file:
         portfolio_plan_file.write("")
-    # Test 1: we check if the add work
-    try:
-        runner.invoke(
-            portfolio_plan,
-            ["add-asset-class", "Stocks", "-p", "55", "-pp", str(project_path)],
+    # Let us open the project
+    portfolio = Portfolio(project_plan)
+    portfolio.open()
+    assert portfolio._plan.name == "entry"
+    # Let us close it now:
+    portfolio.close()
+    # And verify if the create file
+    expected_file_content = """name: entry
+"""
+    with open(project_plan, "r") as portfolio_plan_file:
+        assert portfolio_plan_file.read() == expected_file_content
+
+
+def test_add_asset_class(create_dummy_project):
+    # Asset to add
+    asset_class_to_add = "bonds"
+    asset_class_percentage_to_add = 15
+    # Project opening
+    _, _, project_plan = create_dummy_project
+    portfolio = Portfolio(project_plan)
+    # Allocate
+    with portfolio as p:
+        p.add(asset_class_to_add, asset_class_percentage_to_add)
+    # Verify allocation
+    with portfolio as p:
+        allocated_node = None
+        for node in p._plan.children:
+            if node.name == asset_class_to_add:
+                allocated_node = node
+                break
+        assert allocated_node.name == asset_class_to_add
+        assert allocated_node.percentage == asset_class_percentage_to_add
+
+
+def test_add_asset_class_allocation(create_dummy_project):
+    # Asset allocation to add
+    asset_class_to_add = "etfs"
+    asset_class_allocation_to_add = "mid_market_caps"
+    allocation_percentage = 15
+    # Project opening
+    _, _, project_plan = create_dummy_project
+    portfolio = Portfolio(project_plan)
+    # Allocate
+    with portfolio as p:
+        p.add(
+            asset_class_to_add,
+            None,
+            asset_class_allocation_to_add,
+            allocation_percentage,
         )
-    except Exception:
-        assert False
-    # Test 2: we check if the assign work
-    with open(project_plan, "w") as portfolio_plan_file:
-        portfolio_plan_file.write("")
-    try:
-        runner.invoke(portfolio_plan, ["assign-budget", "10000"])
-    except Exception:
-        assert False
+    # Verify allocation
+    with portfolio as p:
+        allocated_node = None
+        # Find asset-class
+        for node in p._plan.children:
+            if node.name == asset_class_to_add:
+                allocated_node = node
+                break
+        # Find allocation
+        for node in allocated_node.children:
+            if node.name == asset_class_allocation_to_add:
+                allocated_node = node
+                break
+
+        assert allocated_node.name == asset_class_allocation_to_add
+        assert allocated_node.percentage == allocation_percentage
+
+
+def test_overwrite_asset_class_allocation(create_dummy_project):
+    # Project opening
+    _, _, project_plan = create_dummy_project
+    portfolio = Portfolio(project_plan)
+    # Allocate
+    with portfolio as p:
+        p.add("etfs", None, "mid_market_caps", 15)
+    # Overwrite
+    with portfolio as p:
+        p.add("etfs", 15, "mid_market_caps", 80)
+    # Verify allocation
+    with portfolio as p:
+        allocated_node = None
+        # Find asset-class
+        for node in p._plan.children:
+            if node.name == "etfs":
+                allocated_node = node
+                break
+        assert allocated_node.name == "etfs"
+        assert allocated_node.percentage == 15
+        # Find allocation
+        for node in allocated_node.children:
+            if node.name == "mid_market_caps":
+                allocated_node = node
+                break
+        assert allocated_node.name == "mid_market_caps"
+        assert allocated_node.percentage == 80
+
+
+def test_remove_asset_class(create_dummy_project):
+    # Project opening
+    _, _, project_plan = create_dummy_project
+    portfolio = Portfolio(project_plan)
+    # Remove action
+    with portfolio as p:
+        p.remove("etfs")
+    # Verify that the removal occurred
+    with portfolio as p:
+        allocated_node = None
+        # Find asset-class
+        for node in p._plan.children:
+            if node.name == "etfs":
+                allocated_node = node
+                break
+        assert allocated_node == None
+
+
+def test_remove_asset_class_allocation(create_dummy_project):
+    # Project opening
+    _, _, project_plan = create_dummy_project
+    portfolio = Portfolio(project_plan)
+    # Remove action
+    with portfolio as p:
+        p.remove("stocks", "mid_market_caps")
+    # Verify that the removal occurred
+    with portfolio as p:
+        asset_class_node = None
+        allocated_node = None
+        # Find asset-class
+        for node in p._plan.children:
+            if node.name == "stocks":
+                asset_class_node = node
+                break
+        # Find allocation
+        for node in asset_class_node.children:
+            if node.name == "mid_market_caps":
+                allocated_node = node
+                break
+        assert allocated_node == None
+
+
+def test_validate_rendering(create_dummy_project, capsys):
+    # Project opening
+    _, _, project_plan = create_dummy_project
+    portfolio = Portfolio(project_plan)
+    # print (to be called with pytest -s to see it)
+    with portfolio as p:
+        p.visualize_allocation()
+
+    captured = capsys.readouterr()
+    assert (
+        captured.out
+        == "entry\n├── ( etfs , 30 )\n│   └── ( big_market_caps , 100 )\n└── ( stocks , 70 )\n    ├── ( big_market_caps , 50 )\n    └── ( mid_market_caps , 40.0 )\n"
+    )
+
+
+def test_validate_allocation(create_dummy_project, capsys):
+    # Project opening
+    _, _, project_plan = create_dummy_project
+    portfolio = Portfolio(project_plan)
+    # print (to be called with pytest -s to see it)
+    with portfolio as p:
+        p.check_allocation()
+
+    captured = capsys.readouterr()
+    assert (
+        captured.out
+        == "entry -> ok!\n├── etfs -> ok!\n└── stocks -> allocation error!\n"
+    )

@@ -2,11 +2,11 @@
 Investment portfolio
 **************************
 
-:module: portfolio_plan_cli
+:module: portfolio_plan_cli_tree
 
-:synopsis: CLI section for portfolio configuration
+:synopsis: CLI section for portfolio configuration (resolved with tree)
 
-.. currentmodule:: portfolio_plan_cli
+.. currentmodule:: portfolio_plan_cli_tree
 
 
 :Copyright: Copyright (c) 2010-2021 sebastianpfischer
@@ -19,10 +19,13 @@ import click
 import os
 
 from .types_and_vars import portfolio_plan_name
+from typing import Optional
 from pathlib import Path
 import yaml
-import collections.abc
-import pandas as pd
+from anytree.importer import DictImporter
+from anytree.exporter import DictExporter
+from anytree import Node, RenderTree
+from anytree.resolver import Resolver, ChildResolverError
 
 
 #  Create the portfolio plan
@@ -53,7 +56,7 @@ def percentage_option(function):
         "--percentage",
         type=click.FLOAT,
         required=True,
-        help="Percentage you want to invest in.",
+        help="Amount you want to invest in.",
     )(function)
     return function
 
@@ -65,7 +68,7 @@ class Portfolio:
         """open the yaml file and store the config"""
         self._path_to_yaml = path_to_yaml
         self._plan = {}
-        self.dataframe = None
+        self.tree = None
         pass
 
     def open(self):
@@ -76,104 +79,132 @@ class Portfolio:
 
     def __enter__(self):
         with open(self._path_to_yaml, "r") as portfolio_plan_file:
-            self._plan = yaml.load(portfolio_plan_file, Loader=yaml.SafeLoader)
-            # if yaml file is empty, instead of None, provide an empty dict
-            # for consistency
-            if not self._plan:
-                self._plan = {}
+            # Load the yaml into a dict
+            dict_plan = yaml.load(portfolio_plan_file, Loader=yaml.SafeLoader)
+            if dict_plan:
+                # Transform the dict into a tree
+                importer = DictImporter()
+                self._plan = importer.import_(dict_plan)
+                # if yaml file is empty, instead of None, provide an empty dict
+                # for consistency
+            else:
+                self._plan = Node("entry")
         # If the open was successful, return us
         return self
 
     def __exit__(self, exc_type, exc, exc_tb):
         # If the received values are different to None, an error occurred!
         if exc_type != exc != exc_tb != None:
-            click.echo(f"Error occure: {exc_type}, {exc}, {exc_tb}")
+            click.echo(f"Error occurred: {exc_type}, {exc}, {exc_tb}")
         # No, error found, we try to save the configuration
         with open(self._path_to_yaml, "w") as portfolio_plan_file:
-            yaml.dump(self._plan, portfolio_plan_file, default_flow_style=False)
-
-    def _update_dict(
-        self, dict_to_update: dict, dict_to_update_with: dict, *, remove: bool = False
-    ):
-        """Update the configuration with the request
-
-        .. warning::
-            This algorithm is not smart and cannot detect today if the elements
-            to add or delete already exist in the dict_to_update.
-        """
-        for key, value in dict_to_update_with.items():
-            if isinstance(value, collections.abc.Mapping):
-                # If value is a dict, we have to have a recursion
-                dict_to_update[key] = self._update_dict(
-                    dict_to_update.get(key, {}), value, remove=remove
-                )
-            else:
-                if not remove:
-                    dict_to_update[key] = value
-                else:
-                    del dict_to_update[key]
-        return dict_to_update
-
-    def update_dict(self, dict_to_update_with: dict, *, remove: bool = False):
-        """Update the current configuration with a provided dict"""
-        return self._update_dict(self._plan, dict_to_update_with, remove=remove)
+            # Convert tree to dict
+            exporter = DictExporter()
+            yaml.dump(
+                exporter.export(self._plan),
+                portfolio_plan_file,
+                default_flow_style=False,
+            )
 
     def add(
         self,
-        asset_class: str,
-        percentage: float = 0,
-        asset_subclass: str = "",
-        subpercentage: float = 0,
+        asset_class_name: str,
+        percentage: Optional[float] = None,
+        asset_class_allocation_name: str = "",
+        allocation_percentage: Optional[float] = None,
     ):
-        element_to_add = None
         # Set the assets to lowercase (to minimize typos)
-        asset_class = asset_class.lower()
-        asset_subclass = asset_subclass.lower()
-        # Separate in 2 cases with prio:
-        # 1 - class was given
-        # 2 - subclass was given
-        if asset_subclass:
-            element_to_add = {
-                asset_class: {
-                    "subclasss": {asset_subclass: {"percentage": subpercentage}}
-                }
-            }
-        elif asset_class:
-            element_to_add = {asset_class: {"percentage": percentage}}
-        # If none of the above cases was valid, we raise an error
-        if element_to_add:
-            self._update_dict(self._plan, element_to_add)
-        else:
-            raise IOError
+        asset_class_name = asset_class_name.lower()
+        asset_class_allocation_name = asset_class_allocation_name.lower()
 
-    def remove(self, asset_class: str, asset_subclass: str = ""):
-        element_to_remove = None
+        def allocate(name: str, parent: Node, percentage: float):
+            asset = None
+            for node in parent.children:
+                if node.name == name:
+                    asset = node
+            if not percentage and asset:
+                # Case where percentage was not given
+                return asset
+            elif not (0.0 < percentage <= 100.0):
+                # Not allowed case
+                raise TypeError(f" percentage = {percentage} is not allowed")
+            if not asset:
+                asset = Node(name, parent, percentage=percentage)
+                print(f"{name} was allocated")
+            elif asset.percentage != percentage:
+                print(
+                    f"{name} percentage updated from {asset.percentage} to {percentage}"
+                )
+                asset.percentage = percentage
+            return asset
+
+        # Allocate assets
+        asset_class = None
+        if asset_class_name:
+            asset_class = allocate(asset_class_name, self._plan, percentage)
+        if asset_class_allocation_name and asset_class:
+            _ = allocate(
+                asset_class_allocation_name, asset_class, allocation_percentage
+            )
+
+    def remove(self, asset_class_name: str, asset_class_allocation_name: str = ""):
         # Set the assets to lowercase (to minimize typos)
-        asset_class = asset_class.lower()
-        asset_subclass = asset_subclass.lower()
-        # Separate in 2 cases with prio:
-        # 1 - class was given
-        # 2 - subclass was given
-        if asset_subclass:
-            element_to_remove = {asset_class: {"subclasss": {asset_subclass: None}}}
-        elif asset_class:
-            element_to_remove = {asset_class: None}
-        # If none of the above cases was valid, we raise an error
-        if element_to_remove:
-            self._update_dict(self._plan, element_to_remove, remove=True)
-        else:
-            raise IOError
-
-    def load_dataframe(self):
-        """The idea is to reduce load if we do not manipulate the frame"""
-        if self._plan:
-            self.dataframe = pd.DataFrame.from_dict(self._plan)
+        asset_class_name = asset_class_name.lower()
+        asset_class_allocation_name = asset_class_allocation_name.lower()
+        # Create resolver
+        resolver = Resolver("name")
+        # Case 1: only asset class was given
+        if asset_class_name and not asset_class_allocation_name:
+            try:
+                asset: Node = resolver.get(self._plan, asset_class_name)
+                asset.parent = None
+                print(f"{asset_class_name} was successfully deleted")
+            except ChildResolverError:
+                print(f"{asset_class_name} was not found!")
+        # Case 2: allocation was also provided
+        elif asset_class_name and asset_class_allocation_name:
+            try:
+                asset: Node = resolver.get(
+                    self._plan, asset_class_name + "/" + asset_class_allocation_name
+                )
+                asset.parent = None
+                print(f"{asset_class_allocation_name} was successfully deleted")
+            except ChildResolverError:
+                print(f"{asset_class_allocation_name} was not found!")
 
     def check_allocation(self):
-        pass
+        # We will check that each children contain the right percentage
+        def pre_order_verification(node: Node):
+            # Return in case of no children
+            if not node.children:
+                return
+            # calculate percentage of the children
+            total = 0.0
+            for child in node.children:
+                total += child.percentage
+            if total == 100.0:
+                node.allocation_check = "-> ok!"
+            else:
+                node.allocation_check = "-> allocation error!"
+            # Proceed with the kids
+            for child in node.children:
+                pre_order_verification(child)
+
+        # Apply pre-order-verification
+        pre_order_verification(self._plan)
+        # Render
+        for pre, _, node in RenderTree(self._plan):
+            if hasattr(node, "allocation_check"):
+                print(f"{pre}{node.name} {node.allocation_check}")
+            else:
+                continue
 
     def visualize_allocation(self):
-        return repr(self.dataframe)
+        for pre, _, node in RenderTree(self._plan):
+            if hasattr(node, "percentage"):
+                print(f"{pre}( {node.name} , {node.percentage} )")
+            else:
+                print(f"{pre}{node.name}")
 
     def __str__(self) -> str:
         return f"{self._plan}"
