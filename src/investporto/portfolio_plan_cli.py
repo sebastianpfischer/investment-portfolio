@@ -27,6 +27,7 @@ from anytree.exporter import DictExporter
 from anytree import Node, RenderTree
 from anytree.resolver import Resolver, ChildResolverError
 
+from rich.console import Console
 
 #  Create the portfolio plan
 @click.group()
@@ -88,7 +89,7 @@ class Portfolio:
                 # if yaml file is empty, instead of None, provide an empty dict
                 # for consistency
             else:
-                self._plan = Node("entry")
+                self._plan = Node("entry", budget=0.0)
         # If the open was successful, return us
         return self
 
@@ -106,6 +107,13 @@ class Portfolio:
                 default_flow_style=False,
             )
 
+    def allocate_budget(self, budget: float):
+        if isinstance(budget, (int, float)):
+            self._plan.budget = budget
+            Console().print("Budget allocated", style="color(2)")  # green
+        else:
+            Console().print("Type not allowed!", style="color(1)")  # red
+
     def add(
         self,
         asset_class_name: str,
@@ -122,6 +130,8 @@ class Portfolio:
             for node in parent.children:
                 if node.name == name:
                     asset = node
+            if not asset and not percentage:
+                raise TypeError(f" strange pair provided = ({name}, {percentage})")
             if not percentage and asset:
                 # Case where percentage was not given
                 return asset
@@ -183,9 +193,9 @@ class Portfolio:
             for child in node.children:
                 total += child.percentage
             if total == 100.0:
-                node.allocation_check = "-> ok!"
+                node.allocation_check = ("-> ok!", "color(2)")
             else:
-                node.allocation_check = "-> allocation error!"
+                node.allocation_check = ("-> allocation error!", "color(1)")
             # Proceed with the kids
             for child in node.children:
                 pre_order_verification(child)
@@ -195,7 +205,12 @@ class Portfolio:
         # Render
         for pre, _, node in RenderTree(self._plan):
             if hasattr(node, "allocation_check"):
-                print(f"{pre}{node.name} {node.allocation_check}")
+                Console().print(
+                    f"{pre}{node.name} {node.allocation_check[0]}",
+                    style=node.allocation_check[1],
+                )
+                # Need to clean my modification so that it does not affect the tree on save
+                del node.allocation_check
             else:
                 continue
 
@@ -222,8 +237,7 @@ def create_class_of_investment(name: str, percentage: float, projet_path: str):
     # Load the configuration stored in the yaml file
     try:
         with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
-            ppn.add(asset_class=name, percentage=percentage)
-            click.echo(ppn)
+            ppn.add(asset_class_name=name, percentage=percentage)
     except OSError:
         # Exception to be better defined later on
         click.echo("Oups, something went really wrong with the config access!")
@@ -246,13 +260,17 @@ def create_subclass_of_investment(
     name: str, percentage: float, projet_path: str, asset_class: str
 ):
     """Add new asset subclass (Large Caps, Mid Caps, ...)"""
+    # Prepare the asset_class_name and name
+    name = "_".join(name.split()).lower()
+    asset_class = "_".join(asset_class.split()).lower()
     # Load the configuration stored in the yaml file
     try:
         with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
             ppn.add(
-                asset_class=asset_class, asset_subclass=name, subpercentage=percentage
+                asset_class_name=asset_class,
+                asset_class_allocation_name=name,
+                allocation_percentage=percentage,
             )
-            click.echo(ppn)
     except OSError:
         # Exception to be better defined later on
         click.echo("Oups, something went really wrong with the config access!")
@@ -261,15 +279,13 @@ def create_subclass_of_investment(
 
 @portfolio_plan.command("remove-asset-class")
 @click.argument("name", type=click.STRING, required=True, default="Stocks")
-@percentage_option
 @project_path_option
-def remove_class_of_investment(name: str, percentage: float, projet_path: str):
+def remove_class_of_investment(name: str, projet_path: str):
     """Remove new asset class (Stocks, ETFs, Bonds, ...)"""
     # Load the configuration stored in the yaml file
     try:
         with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
-            ppn.remove(asset_class=name)
-            click.echo(ppn)
+            ppn.remove(asset_class_name=name)
     except OSError:
         # Exception to be better defined later on
         click.echo("Oups, something went really wrong with the config access!")
@@ -278,7 +294,6 @@ def remove_class_of_investment(name: str, percentage: float, projet_path: str):
 
 @portfolio_plan.command("remove-asset-subclass")
 @click.argument("name", type=click.STRING, required=True, default="Large Caps")
-@percentage_option
 @project_path_option
 @click.option(
     "-ac",
@@ -287,22 +302,20 @@ def remove_class_of_investment(name: str, percentage: float, projet_path: str):
     required=True,
     help="Class to allocate the subclass",
 )
-def remove_subclass_of_investment(
-    name: str, percentage: float, projet_path: str, asset_class: str
-):
-    """Remove asset subclass (Large Caps, Mid Caps, ...)"""
+def remove_subclass_of_investment(name: str, projet_path: str, asset_class: str):
+    """Remove asset subclass large_market_caps, mid_market_caps, ...)"""
     # Load the configuration stored in the yaml file
     try:
         with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
-            ppn.remove(asset_class=asset_class, asset_subclass=name)
-            click.echo(ppn)
+
+            ppn.remove(asset_class_name=asset_class, asset_class_allocation_name=name)
     except OSError:
         # Exception to be better defined later on
         click.echo("Oups, something went really wrong with the config access!")
         exit(os.EX_OSERR)
 
 
-@portfolio_plan.command("assign-budget")
+@portfolio_plan.command("allocate-budget")
 @click.argument("budget", type=click.FLOAT, required=True, default=0)
 @project_path_option
 def assign_budget(budget: float, projet_path: str):
@@ -310,8 +323,7 @@ def assign_budget(budget: float, projet_path: str):
     # Load the configuration stored in the yaml file
     try:
         with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
-            ppn.update_dict({"budget": budget})
-            click.echo(ppn)
+            ppn.allocate_budget(budget)
     except OSError:
         # Exception to be better defined later on
         click.echo("Oups, something went really wrong with the config access!")
@@ -323,7 +335,14 @@ def assign_budget(budget: float, projet_path: str):
 def verify_allocation(projet_path: str):
     """Verify if the allocation reach really the 100% per class
     and the same per subclass"""
-    click.echo("Will soon be available!")
+    try:
+        with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
+            ppn.check_allocation()
+            click.echo(ppn)
+    except OSError:
+        # Exception to be better defined later on
+        click.echo("Oups, something went really wrong with the config access!")
+        exit(os.EX_OSERR)
 
 
 @portfolio_plan.command("visualize-allocation")
@@ -333,8 +352,7 @@ def visualize_allocation(projet_path: str):
     # Load the configuration stored in the yaml file
     try:
         with Portfolio(Path(projet_path / portfolio_plan_name).resolve()) as ppn:
-            ppn.load_dataframe()
-            click.echo(ppn.visualize_allocation())
+            ppn.visualize_allocation()
     except OSError:
         # Exception to be better defined later on
         click.echo("Oups, something went really wrong with the config access!")

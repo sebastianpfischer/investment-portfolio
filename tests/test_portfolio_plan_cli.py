@@ -77,6 +77,25 @@ def test_portfolio_tree_class_closing(create_dummy_project):
         assert child.percentage in to_get_class_percentage
 
 
+def test_portfolio_tree_allocate_budget(create_dummy_project):
+    """Test if I can reallocate budget"""
+    _, _, project_plan = create_dummy_project
+    portfolio = Portfolio(project_plan)
+    with portfolio as p:
+        p.allocate_budget(4000)
+    # recheck if the budget is correctly put
+    portfolio.open()
+    assert portfolio._plan.budget == 4000
+    portfolio.close()
+    # Try with another type
+    with portfolio as p:
+        p.allocate_budget(200.0)
+    # recheck if the budget is correctly put
+    portfolio.open()
+    assert portfolio._plan.budget == 200.0
+    portfolio.close()
+
+
 def test_portfolio_tree_class_empty_start(create_dummy_project):
     _, _, project_plan = create_dummy_project
     # First we need to empty the repo
@@ -89,8 +108,7 @@ def test_portfolio_tree_class_empty_start(create_dummy_project):
     # Let us close it now:
     portfolio.close()
     # And verify if the create file
-    expected_file_content = """name: entry
-"""
+    expected_file_content = """budget: 0.0\nname: entry\n"""
     with open(project_plan, "r") as portfolio_plan_file:
         assert portfolio_plan_file.read() == expected_file_content
 
